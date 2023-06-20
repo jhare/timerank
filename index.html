@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>TimeRank</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!--jQuery-->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.1/jquery-ui.min.js"></script>
+  <script src="https://kit.fontawesome.com/4d1ea98e79.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.1/themes/smoothness/jquery-ui.css">
+
+  <!--Skeleton CSS-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!--App Styling-->
+  <style type="text/css">
+    body, .ui-dialog, .ui-dialog-content {
+      font-family: 'Raleway', sans-serif;
+      background-color: #212838;
+      color: rgb(0, 115, 187);
+    }
+
+    h2, h3, h4 {
+      font-weight: bold;
+    }
+
+    button, button:visited, button:active {
+      color: white !important;
+      font-weight: bold !important;
+    }
+
+    button:hover {
+      color: #9e428d !important;
+    }
+
+
+    #studytimer {
+      font-weight: bold;
+      font-size: 18px;
+      color: white;
+    }
+
+    .ui-dialog-titlebar, .ui-widget-header {
+      background: #212838 !important;
+      color: white;
+    }
+
+    .cog-selected {
+      color: #9e428d !important;
+    }
+
+    .dist-selected {
+      font-weight: bold !important;
+      color: #9e428d !important;
+      font-size: 24px !important;
+    }
+  </style>
+
+<style type="text/css">
+  .circle-background {
+    background: #ddd;
+    border-radius: 50%; /* Set the border radius to create a circle */
+    width: 32px; /* Set the width and height of the div */
+    height: 32px; display: flex; /* Center the content */
+    justify-content: center;
+    align-items: center;
+    padding-top: 2px;
+    font-family: "Arial", sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  .fa, .fas {
+    cursor: pointer;
+  }
+</style>
+
+
+</head>
+
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="twelve columns">
+        <h1>TimeRank</h1>
+      </div>
+    </div>
+    <!-- foo start -->
+    <div class="row">
+      <div class="two columns">(debug) pick user</div>
+      <div class="four columns">
+        <select id="student_id" onchange="update()">
+          <option value="10">Frank</option>
+          <option value="6">Alice</option>
+          <option value="7">Billy</option>
+          <option value="8">Carolyn</option>
+          <option value="9">David</option>
+        </select>
+      </div>
+    </div>
+    <hr/>
+    <div class="row">
+      <div class="five columns">
+        <div style="font-size:20px; font-weight:bold;color: white;" id="student_grade_display"></div>
+      </div>
+      <div class="seven columns">
+        <div class="row">
+          <div class="four columns">
+            <div style="font-weight: bold; font-family:Raleway; color: rgb(0, 115, 187); font-size: 24px;">Grade Entry</div>
+          </div>
+          <div class="two columns">
+            <input style="margin-left: 8px; width: 64px;" type="text" id="grade">
+          </div>
+          <div class="four columns">
+            <button type="button" onclick="addGrades()">SUBMIT GRADE</button>
+          </div>
+        </div>
+
+        <div class="six columns">
+          <button id="btnAddTime">LOG STUDY SESSION</button>
+          <button id="btnExportTimes">EXPORT CSV</button>
+        </div>
+      </div>
+    </div>
+    <hr/>
+
+      <div class="row">
+        <div class="twelve columns" style="color: white;">
+          <h4>Histogram of Study Durations by Grade Category</h4>
+        </div>
+      </div>
+      <div class="row">
+        <canvas id="averageChart"></canvas>
+      </div>
+
+      <hr/>
+    <div class="row">
+      <div class="six columns" style="color: white;">
+        <h4>Study Durations</h4>
+      </div>
+      <div class="six columns" style="color: white;">
+        <h4>Course Grade</h4>
+      </div>
+    </div>
+      
+    <div class="row" style="margin-top: 16px">
+      <div class="six columns">
+        <canvas id="myChart"></canvas>
+      </div>
+      <div class="six columns">
+        <canvas id="gradeChart"></canvas>
+      </div>
+    </div>
+
+    <div id="input-root-container" style="display: none; margin-top: 32px;">
+      <div id="manual-time-container" class="row">
+        <div class="row">
+          <div class="row">
+            Date: <input id="studydate" type="date" style="margin-left: 32px;"/>
+          </div>
+          <div class="row">
+            Minutes: <input style="margin-left: 8px; width: 64px;" type="text" id="minutes">
+          </div>
+        </div> <!-- end input inside manual time !-->
+      </div> <!-- end manual-time-container !-->
+
+
+      <hr/>
+
+      <div id="locations-container" class="row">
+        <div class="twelve columns">
+          <div class="row" style="margin-bottom: 16px;">
+            <div class="twelve-columns">
+              <div class="twelve columns">
+                <h4>Location</h4>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="two columns">
+              <div class="location circle-background" data-study-location="home">
+                <i class="fa-solid fa-house"></i>
+              </div>
+            </div>
+            
+            <div class="two columns">
+              <div class="location circle-background" data-study-location="school">
+                <i class="fa-solid fa-school"></i>
+              </div>
+            </div>
+
+            <div class="two columns">
+              <div class="location circle-background" data-study-location="self">
+                <i class="fa-solid fa-person"></i>
+              </div>
+            </div>
+
+            <div class="two columns">
+              <div class="location circle-background" data-study-location="group">
+                <i class="fa-solid fa-people-group"></i>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <hr/>
+
+      <div id="dist-container" class="row">
+        <div class="twelve columns">
+          <h4>Distractions</h4>
+          <div class="row" style="margin-bottom: 16px;">
+            <div class="twelve columns">
+              Number of distractions:
+            </div>
+          </div>
+          <div class="row" style="margin-bottom: 16px;">
+            <div class="two columns">
+              <div class="cog-container">
+                <div class="num-distractions circle-background" data-num-distractions="0">0</div>
+              </div>
+            </div>
+            <div class="two columns">
+              <div class="cog-container">
+                <div class="num-distractions circle-background" data-num-distractions="2">2</div>
+              </div>
+            </div>
+            <div class="two columns">
+              <div class="cog-container">
+                <div class="num-distractions circle-background" data-num-distractions="4">4</div>
+              </div>
+            </div>
+            <div class="two columns">
+              <div class="cog-container">
+                <div class="num-distractions circle-background" data-num-distractions="6">6</div>
+              </div>
+            </div>
+            <div class="two columns">
+              <div class="cog-container">
+                <div class="num-distractions circle-background" data-num-distractions="+">+</div>
+              </div>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom: 4px;">
+            <div class="twelve columns">
+              Type of distraction:
+            </div>
+          </div>
+          <div class="row distractions">
+            <div class="row" style="margin-top:8px;">
+              <div class="two columns">
+                <div class="cog-container circle-background">
+                  <i id="distraction-phone" class="distraction fas fa-phone " data-distraction="phone"></i>
+                </div>
+              </div>
+              <div class="two columns">
+                <div class="cog-container circle-background">
+                  <i id="distraction-music" class="distraction fa fa-music " data-distraction="music"></i>
+                </div>
+              </div>
+              <div class="two columns">
+                <div class="cog-container circle-background">
+                  <i id="distraction-pet" class="distraction fa fa-paw " data-distraction="pet"></i>
+                </div>
+              </div>
+              <div class="two columns">
+                <div class="cog-container circle-background">
+                  <i id="distraction-games" class="distraction fa fa-gamepad " data-distraction="games"></i>
+                </div>
+              </div>
+              <div class="two columns">
+                <div class="cog-container circle-background">
+                  <i id="distraction-tv" class="distraction fa fa-tv " data-distraction="tv"></i>
+                </div>
+              </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <hr/>
+
+      <div id="self-assessment-container" class="row">
+        <div class="row">
+          <div class="twelve columns">
+            <label for="amount"><h4>Study Self-assessment:</h4></label>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 16px;">
+          <div class="two columns">
+            <input type="text" id="study_quality" readonly value="10" style="cursor:arrow; border:0; color:#f6931f; font-weight:bold; font-size:20px; width: 48px;">
+          </div>
+          <div class="eight columns" style="padding-top:8px;">
+            <div id="slider"></div>
+          </div>
+        </div>
+        <hr/>
+        <div class="row" style="margin-top: 16px;">
+          <div class="twelve columns" style="text-align: right;">
+            <button type="button" onclick="addMinutes()">ADD</button>
+            <button type="button" onclick="hideDialog()">CANCEL</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+<!-- foo end -->
+
+  <script type="text/javascript">
+    var gradesArr = [];
+    var rawGrades = [];
+    var rawMinutes = [];
+    var averageChartData = {};
+
+    var minuteChart;
+    var gradeChart;
+    var averageChart;
+
+    const host = "http://44.202.185.202:3000";
+
+    const colorRot = [
+      'rgba(75, 192, 192, 1)',
+      'rgba(54, 162, 235, 1)',
+      'rgba(255, 206, 86, 1)',
+      'rgba(153, 102, 255, 1)',
+      'rgba(255, 159, 64, 1)',
+      'rgba(75, 192, 192, 1)',
+      'rgba(255,99,132,1)'
+    ];
+
+    const bgColors = [
+      'rgba(54, 162, 235, 0.2)',
+      'rgba(255, 206, 86, 0.2)',
+      'rgba(75, 192, 192, 0.2)',
+      'rgba(153, 102, 255, 0.2)',
+      'rgba(255, 159, 64, 0.2)',
+      'rgba(255, 99, 132, 0.2)',
+      'rgba(54, 162, 235, 0.2)',
+    ];
+
+    function getGrades() {
+      const studentID = parseInt($("#student_id").val());
+
+      $.ajax({
+        url: host+"/grades/"+studentID,
+        dataType: "json",
+        success: function(data) {
+          rawGrades = data;
+          gradesArr = data.map(obj => obj.grade).flat();
+
+          renderGradesChart();
+          const name = $('#student_id option:selected').text();
+          $("#student_grade_display").html(name + ", Current Grade: " + rawGrades[rawGrades.length-1].grade);
+        },
+        error: function(xhr, status, error) {
+          console.log("Error: " + error);
+        }
+      });
+    }
+
+    function getTimes() {
+      const studentID = parseInt($("#student_id").val());
+      $.ajax({
+        url: host+"/times/"+studentID,
+        dataType: "json",
+        success: function(data) {
+          rawMinutes = data;
+          renderChart();
+        },
+        error: function(xhr, status, error) {
+          console.log("Error: " + error);
+        }
+      });
+    }
+
+    function hideDialog() {
+      $("#input-root-container").dialog("close");
+    }
+
+    // Add an entry to the DB
+    function addMinutes() {
+      let studyDateStr = $("#studydate").val();
+      let studydate = new Date(studyDateStr+'T00:00:00.000Z');
+      let studyDateTime = studydate.getTime()- (-300 * 60000);
+
+      if (!studydate) {
+        alert("Please pick a valid date for study session.")
+        return;
+      }
+
+      let minutes = parseInt(document.getElementById("minutes").value);
+
+      if(!minutes) {
+        alert("Please enter number of minutes studied.")
+        return;
+      }
+
+      if (minutes) {
+        let count;
+        document.getElementById("minutes").value = "";
+        document.getElementById("studydate").value = "";
+
+        const studyQuality = parseInt($("#study_quality").val());
+        const studentID = parseInt($("#student_id").val());
+
+        // only distractions that are "true" boolean
+        const distractions = Object.entries(distractionTypes)
+          .filter(([key, value]) => value === true)
+          .map(([key, value]) => key);
+
+        const postParams = {
+          student: studentID,
+          minutes: minutes,
+          date: studyDateTime,
+          study_quality: studyQuality,
+          distractions: distractions,
+          num_distractions: numDistractions,
+          study_location: studyLocation
+        };
+
+        $.ajax({
+          url: host+"/times",
+          type: "POST",
+          data: JSON.stringify(postParams),
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          success: function(data) {
+            hideDialog();
+            resetStudySessionForm();
+            update();
+          },
+          error: function(xhr, textStatus, errorThrown) {
+            console.error("Request failed:", errorThrown);
+            alert("Error contacting backend. Will refresh after click OK.");
+            hideDialog();
+            resetStudySessionForm();
+            update();
+          }
+        });
+      }
+    }
+
+    // Add an entry to the DB
+    function addGrades() {
+      let grade = parseInt(document.getElementById("grade").value);
+      if (grade) {
+
+        const studentID = parseInt($("#student_id").val());
+        const now = new Date();
+        // Create an object to send in the request
+        var postParams = {
+          student: studentID,
+          grade: grade,
+          date: (now.getTime()),
+        };
+
+        // Use jQuery to send the POST request
+        $.ajax({
+          url: host+"/grades",
+          type: "POST",
+          data: JSON.stringify(postParams),
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          success: function(data) {
+            update();
+          },
+          error: function(xhr, textStatus, errorThrown) {
+            console.error("Request failed:", errorThrown);
+          }
+        });
+
+        document.getElementById("grade").value = "";
+      }
+    }
+
+    // Create a chart
+    function renderChart() {
+      const vals = rawMinutes.map((m)=>m.minutes).flat();
+
+      const dateLabels = [];
+      const ptColors = [];
+      for(let i = 0; i < rawMinutes.length; i++) {
+        let l = (new Date(rawMinutes[i].date)).toLocaleDateString('en-US');
+
+        dateLabels.push(l);
+        ptColors.push(colorRot[i%5]);
+      }
+
+      var data = {
+        labels: dateLabels,
+        datasets: [{
+          label: 'Minutes Studied',
+          fill: false,
+          data: vals,
+          tension: 0.4,
+          backgroundColor: bgColors,
+          borderColor: ptColors,
+          borderWidth: 2
+        }]
+      };
+
+      let ctx = $("#myChart");
+
+      if(minuteChart) {
+        minuteChart.destroy();
+      }
+
+      let options = {
+        plugins: {
+          legend: {
+            display: false
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: 'white'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Study Session Minues",
+              color: "white",
+            }
+          }
+        }
+      };
+
+      minuteChart = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: options,
+      });
+    }
+
+    function renderGradesChart() {
+      const vals = rawGrades.map((g)=>g.grade).flat();
+
+      const dateLabels = [];
+      for(let i = 0; i < rawGrades.length; i++) {
+          let l = (new Date(rawGrades[i].date)).toLocaleDateString('en-US');
+          dateLabels.push(l);
+      }
+
+      const data = {
+        labels: dateLabels,
+        datasets: [{
+          label: 'Grade',
+          fill: false,
+          data: vals,
+          tension: 0.4,
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)',
+            'rgba(255, 99, 132, 0.2)'
+          ],
+          borderColor: [
+            'rgba(255,99,132,1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 2
+        }]
+      };
+
+      const ctx = $("#gradeChart");
+
+      if(gradeChart) {
+        gradeChart.destroy();
+      }
+
+      let options = {
+        plugins: {
+          legend: {
+            display: false
+          },
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: 'white'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "% Grade",
+              color: "white",
+            }
+          }
+        }
+      };
+
+      gradeChart = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: options,
+      });
+    }
+   
+  function getAverages() {
+    const studentID = parseInt($("#student_id").val());
+
+    $.ajax({
+        url: host+"/times/weighted/student/"+studentID,
+        dataType: "json",
+        success: function(data) {
+          averageChartData = data;
+          renderAveragesChart();
+        },
+        error: function(xhr, status, error) {
+          console.log("Error retrieving averages: " + error);
+        }
+      });
+  }
+
+  function renderAveragesChart() {
+    const groupAvgTimeVals  = averageChartData.groupGraph.map((d) => d.groupAvgTime?d.groupAvgTime:0).flat();
+    const groupAvgQualVals  = averageChartData.groupGraph.map((d) => d.groupAvgTime?d.groupAvgQual:0).flat();
+    let currentGrade = rawGrades[rawGrades.length-1].grade;
+
+    if(currentGrade > 90) {
+      targetIndex = 0;
+    } else if(currentGrade >= 80 && currentGrade < 90) {
+      targetIndex = 1;
+    } else if(currentGrade >= 70 && currentGrade < 80) {
+      targetIndex = 2;
+    } else if(currentGrade >= 60 && currentGrade < 70) {
+      targetIndex = 3;
+    } else if(currentGrade < 60) {
+      targetIndex = 4;
+    }
+
+    // if this needed to be flexible for some arbitrary cats, 5 would have to be some "n" or something
+    let indivTimeStarData = new Array(5).fill(null);
+    indivTimeStarData[targetIndex] = averageChartData.indivGraph.avgStudyTime;
+
+    let indivQualCrossData = new Array(5).fill(null);
+    indivQualCrossData[targetIndex] = averageChartData.indivGraph.avgStudyQuality;
+
+    let highlightColumn = new Array(5).fill(null);
+    highlightColumn[targetIndex] = 10;
+
+    let datasets = [{
+        label: 'Average of Total Study Durations',
+        data: groupAvgTimeVals,
+        yAxisID: 'y1',
+        order: 2,
+        backgroundColor: 'rgba(75, 192, 192, .2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2
+      },{
+        label: 'Average Study Quality',
+        data: groupAvgQualVals,
+        yAxisID: 'y2',
+        order: 2,
+        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+        borderColor: 'rgba(255, 159, 64, 1)',
+        borderWidth: 2
+      },
+      {
+        label: 'Individual Study Duration (Star)',
+        data: indivTimeStarData, 
+        yAxisID: 'y1',
+        order: 1,
+        type: 'line',
+        borderColor: '#4a84bf',
+        borderWidth: 5,
+        pointStyle: 'star',
+        pointRadius: 15
+      },
+      {
+        label: 'Individual Study Quality (Cross)',
+        data: indivQualCrossData,
+        yAxisID: 'y2',
+        order: 1,
+        type: 'line',
+        borderColor: '#ff008c',
+        borderWidth: 5,
+        pointStyle: 'crossRot',
+        pointRadius: 15 
+      },
+      {
+        label: 'Student Grade Category',
+        data: highlightColumn,
+        yAxisID: 'y2',
+        xAxisID: 'x2',
+        order: 10,
+        tooltips: false,
+        backgroundColor: 'rgba(255,99,132, .3)',
+        borderColor: 'rgba(255,99,132, .2)',
+        borderWidth: 1,
+        barPercentage: 1.1,
+      },
+    ];
+
+    const data = {
+      labels: ["A", "B", "C", "D", "F"],
+      datasets: datasets
+    };
+
+    let ctx = $("#averageChart");
+
+    if(averageChart) {
+      averageChart.destroy();
+    }
+
+    let options = {
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            usePointStyle: true, 
+          }
+        },
+        tooltip: {
+          filter: function filterCallback(data) {
+            if(data.datasetIndex === 4) {
+              return false;
+            }
+            return true;
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          ticks: {
+            color: 'white'
+          }
+        },
+        y1: {
+          type: 'linear',
+          title: {
+            display: true,
+            text: "Average of Total Study Durations",
+            color: "rgb(75, 192, 192)",
+            font: {
+              size: "16px",
+              weight: "bold",
+            },
+          },
+          ticks: {
+            beginAtZero: true
+          },
+          grid: {
+            drawOnChartArea: false // only want the grid lines for one axis to show up
+          }
+        },
+        y2: {
+          type: 'linear',
+          position: 'right',
+          title: {
+            display: true,
+            text: "Average Study Quality",
+            color: "rgb(255, 159, 64)",
+            font: {
+              size: "16px",
+              weight: "bold",
+            },
+          },
+          ticks: {
+            beginAtZero: true
+          },
+          grid: {
+            drawOnChartArea: false // only want the grid lines for one axis to show up
+          }
+        },
+        x2: {
+          type: 'category',
+          //postion: 'top',
+          display: false,
+        }
+      }
+    };
+
+
+    averageChart = new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: options
+    });
+  }
+
+  function createSlider() {
+    $("#slider").slider({
+      value:10,
+      min: 1,
+      max: 10,
+      step: 1,
+      slide: function( event, ui ) {
+        $( "#study_quality" ).val( ui.value );
+      }
+    });
+  }
+
+  function update() {
+    getTimes();
+    getGrades();
+    getAverages();
+    createSlider();
+  }
+
+  // realize these vars are hoisted above also
+  const distractionTypesInit = {
+    phone: false,
+    music: false,
+    pet: false,
+    games: false,
+    tv: false
+  };
+
+  // make a copy of init
+  var distractionTypes = {...distractionTypesInit};
+
+  var numDistractions = 0;
+
+  // do not name this "location" that is a reserved window global
+  var studyLocation = null;
+
+  function resetStudySessionForm() {
+    numDistractions = 0;
+    studyLocation = null;
+    distractionTypes = {...distractionTypesInit};
+
+    $(".distraction").removeClass('cog-selected');
+    $(".num-distractions").removeClass('cog-selected');
+    $(".location").removeClass('cog-selected');
+
+    $(".distraction").removeClass('dist-selected');
+    $(".num-distractions").removeClass('dist-selected');
+    $(".location").removeClass('dist-selected');
+  }
+
+  $(function() {
+    update();
+
+    $(".distraction").on("click", function handleDistractionTypeClick() {
+      const el = $(this);
+      const distractionType = el.attr("data-distraction");
+
+      if(el.hasClass('cog-selected')) {
+        el.removeClass('cog-selected');
+        distractionTypes[distractionType] = false;
+
+      } else {
+        el.addClass('cog-selected');
+        distractionTypes[distractionType] = true
+      }
+    });
+
+    $(".num-distractions").on("click", function handleDistractionNumClick() {
+      $(".num-distractions").removeClass("dist-selected");
+      const el = $(this);
+      el.addClass('dist-selected')
+      numDistractions = el.attr("data-num-distractions"); // not going to parseInt here for + sake
+      console.log("num is ", numDistractions);
+    })
+
+    $(".location").on("click", function handleLocationClick() {
+      const el = $(this);
+      const locationType = el.attr("data-study-location");
+
+      if(el.hasClass('cog-selected')) {
+        el.removeClass('cog-selected');
+      } else {
+        el.addClass('cog-selected');
+      }
+
+      studyLocation = locationType;
+    });
+
+    $("#btnAddTime").on("click", function handleBtnAddClick() {
+      $("#input-root-container").dialog({
+          modal: true,
+          minWidth: 600,
+          title: "Log Study Session"
+      });
+    });
+
+    $("#btnExportTimes").on("click", function handleExportClick() {
+      const studentID = parseInt($("#student_id").val());
+      const url= host+"/times/export/"+studentID;
+      window.open(url); // content-disposition forces file download
+    });
+
+  });
+</script>
+</body>
+
+</html>
